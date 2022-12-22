@@ -1,0 +1,24 @@
+# Contributing to the In-Memory Executable Loader
+
+Thank you for your interest in contributing to the In-Memory Executable Loader! We welcome contributions of all kinds, including code, documentation, and bug reports.
+
+## Submitting a Pull Request
+
+To submit a pull request for the In-Memory Executable Loader, follow these steps:
+
+* Fork the repository to your own GitHub account.
+* Clone the repository to your local machine.
+* Create a new branch for your changes.
+* Make your changes, committing as you go.
+* Push your changes to your fork on GitHub.
+* Submit a pull request from your fork to the main repository.
+
+Your pull request will be reviewed by one of our maintainers, who will either merge your changes or provide feedback on any changes that may be needed.
+
+## Coding Standards
+
+We follow the [C17](https://en.wikipedia.org/wiki/C17_(C_standard_revision)) standard for the In-Memory Executable Loader.
+
+## License
+
+By contributing to the In-Memory Executable Loader, you agree to license your contributions under the [MIT license](LICENSE).
