@@ -57,22 +57,26 @@ int _nt_header_load(const char *buffer, PIMAGE_NT_HEADER *header) {
         (*header)->FileHeader.Machine != 0x014c,
         "[!] Bitness mismatch, expected 32-bit\n"
     );
+    DEBUG("[+] Bitness: 32-bit");
     #elif defined(BITS_64)
     CHECK_ERROR(
         (*header)->FileHeader.Machine != 0x8664,
         "[!] Bitness mismatch, expected 64-bit\n"
     );
+    DEBUG("[+] Bitness: 64-bit");
     #endif
 
     CHECK_ERROR(
         (*header)->FileHeader.NumberOfSections > 96,
         "[!] Invalid number of sections\n"
     );
+    DEBUG("[+] Number of sections: %d", (*header)->FileHeader.NumberOfSections);
 
     CHECK_ERROR(
         (*header)->FileHeader.SizeOfOptionalHeader == 0,
         "[!] Invalid optional header size, may be a COFF object\n"
     );
+    DEBUG("[+] Optional header size: %d", (*header)->FileHeader.SizeOfOptionalHeader);
 
     #if defined(BITS_32)
     CHECK_ERROR(
@@ -85,11 +89,43 @@ int _nt_header_load(const char *buffer, PIMAGE_NT_HEADER *header) {
         "[!] Invalid optional header magic\n"
     );
     #endif
+    DEBUG("[+] Optional header magic: 0x%x", (*header)->OptionalHeader.Magic);
+
+    (*header)->DataDirectory = malloc(sizeof(IMAGE_DATA_DIRECTORY) * (*header)->OptionalHeader.NumberOfRvaAndSizes);
+    unsigned int i = 0;
+    for (i = 0; i < (*header)->OptionalHeader.NumberOfRvaAndSizes; i++) {
+        (*header)->DataDirectory[i] = (PIMAGE_DATA_DIRECTORY)(buffer + sizeof(IMAGE_OPTIONAL_HEADER) + sizeof(IMAGE_DATA_DIRECTORY) * i);
+    }
+    DEBUG("[+] Number of data directories: %d", (*header)->OptionalHeader.NumberOfRvaAndSizes);
 
     rc = ERR_SUCCESS;
 cleanup:
 
     INFO("[_nt_header_load] rc: %d", rc);
+    return rc;
+}
+
+int _load_sections(const char *buffer, PIMAGE_NT_HEADER nt_header, PIMAGE_SECTION_HEADER **sections) {
+    int rc = ERR_GENERIC;
+    PIMAGE_SECTION_HEADER *_sections = NULL;
+    unsigned int i = 0;
+
+    _sections = malloc(sizeof(IMAGE_SECTION_HEADER) * nt_header->FileHeader.NumberOfSections);
+    CHECK_ERROR(
+        _sections == NULL,
+        "[!] Failed to allocate memory\n"
+    );
+
+    for (i = 0; i < nt_header->FileHeader.NumberOfSections; i++) {
+        *(_sections + i) = (PIMAGE_SECTION_HEADER)(buffer + sizeof(IMAGE_SECTION_HEADER) * i);
+    }
+ 
+    *sections = _sections;
+    rc = ERR_SUCCESS;
+cleanup:
+    FREE_IF(rc, _sections);
+
+    INFO("[_load_sections] rc: %d", rc);
     return rc;
 }
 
@@ -111,14 +147,39 @@ int loader_init(PLOADER *loader, const char *buffer, unsigned int size) {
         _dos_header_load(buffer, &_loader->dos_header),
         "[!] Failed to load DOS header\n"
     );
+    buffer = buffer + _loader->dos_header->e_lfanew;
+    size -= _loader->dos_header->e_lfanew;
+
     CHECK_ERROR(
-        size < _loader->dos_header->e_lfanew + sizeof(IMAGE_NT_HEADER),
-        "[!] Invalid buffer size\n"
-    );
-    CHECK_ERROR(
-        _nt_header_load(buffer + _loader->dos_header->e_lfanew, &_loader->nt_header),
+        _nt_header_load(buffer, &_loader->nt_header),
         "[!] Failed to load NT header\n"
     );
+    buffer = buffer + sizeof(IMAGE_FILE_HEADER) + 4;
+    size -= sizeof(IMAGE_FILE_HEADER) + 4;
+
+    unsigned int optional_header_size = _loader->nt_header->FileHeader.SizeOfOptionalHeader;
+    unsigned int actual_size = sizeof(IMAGE_OPTIONAL_HEADER) + sizeof(IMAGE_DATA_DIRECTORY) * _loader->nt_header->OptionalHeader.NumberOfRvaAndSizes;
+    CHECK_ERROR(
+        optional_header_size != actual_size,
+        "[!] Invalid optional header size (expected %d, got %d)\n",
+        optional_header_size, actual_size
+    );
+    buffer = buffer + optional_header_size;
+    size -= optional_header_size;
+
+    CHECK_ERROR(
+        _load_sections(
+            buffer,
+            _loader->nt_header,
+            &_loader->sections
+        ),
+        "[!] Failed to load sections\n"
+    );
+
+    int i = 0;
+    for(i = 0; i < _loader->nt_header->FileHeader.NumberOfSections; i++) {
+        INFO("Section %d: %s", i, (char *)&_loader->sections[i]->Name);
+    }
 
     *loader = _loader;
     rc = ERR_SUCCESS;

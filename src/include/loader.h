@@ -28,6 +28,7 @@
 typedef struct _loader {
     PIMAGE_DOS_HEADER dos_header;
     PIMAGE_NT_HEADER nt_header;
+    PIMAGE_SECTION_HEADER *sections;
 } LOADER, *PLOADER;
 #elif defined(OS_LINUX)
 typedef struct _loader {

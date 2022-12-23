@@ -94,7 +94,7 @@ typedef struct image_optional_header_t {
     uint64_t SizeOfHeapCommit;
     uint32_t LoaderFlags;
     uint32_t NumberOfRvaAndSizes;
-    PIMAGE_DATA_DIRECTORY DataDirectory;
+    PIMAGE_DATA_DIRECTORY *DataDirectory;
 } IMAGE_OPTIONAL_HEADER, *PIMAGE_OPTIONAL_HEADER;
 #else
 typedef struct image_optional_header_t {
@@ -128,7 +128,6 @@ typedef struct image_optional_header_t {
     uint32_t SizeOfHeapCommit;
     uint32_t LoaderFlags;
     uint32_t NumberOfRvaAndSizes;
-    PIMAGE_DATA_DIRECTORY DataDirectory;
 } IMAGE_OPTIONAL_HEADER, *PIMAGE_OPTIONAL_HEADER;
 #endif
 
@@ -136,15 +135,13 @@ typedef struct _image_nt_header {
     uint32_t Signature;
     IMAGE_FILE_HEADER FileHeader;
     IMAGE_OPTIONAL_HEADER OptionalHeader;
+    PIMAGE_DATA_DIRECTORY *DataDirectory;
 } IMAGE_NT_HEADER, *PIMAGE_NT_HEADER;
 
 
 typedef struct _image_section_header {
     uint8_t Name[8];
-    union {
-        uint32_t PhysicalAddress;
-        uint32_t VirtualSize;
-    } Misc;
+    uint32_t VirtualSize;
     uint32_t VirtualAddress;
     uint32_t SizeOfRawData;
     uint32_t PointerToRawData;
