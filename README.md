@@ -1,3 +1,5 @@
+# WARNING: THIS IS NOT IMPLEMENTED FULLY, DON'T USE.
+
 # In-Memory Executable Loader
 
 This tool allows you to load and run Windows executable files in memory, without writing them to disk. It can be useful for testing, debugging, or creating a secure, isolated environment.
